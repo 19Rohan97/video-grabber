@@ -13,8 +13,21 @@
 
   // Get iframes that may be video embeds (e.g., YouTube, Vimeo)
   document.querySelectorAll("iframe").forEach((iframe) => {
-    if (/youtube|vimeo/.test(iframe.src)) {
-      videos.push({ type: "iframe", src: iframe.src });
+    const raw = iframe.outerHTML;
+
+    // Try to find a YouTube video ID from various attributes
+    const match = raw.match(
+      /(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]+)/
+    );
+
+    if (match) {
+      const videoId = match[1];
+      const thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      videos.push({
+        type: "iframe",
+        src: `https://www.youtube.com/watch?v=${videoId}`,
+        thumbnail,
+      });
     }
   });
 

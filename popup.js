@@ -4,40 +4,74 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       target: { tabId: tabs[0].id },
       func: () => {
         const videos = [];
+
         document.querySelectorAll("video").forEach((video) => {
-          if (video.src) {
-            videos.push(video.src);
-          } else {
-            video.querySelectorAll("source").forEach((s) => {
-              if (s.src) videos.push(s.src);
+          let src = video.src || (video.querySelector("source")?.src ?? "");
+          if (src) {
+            videos.push({
+              type: "video",
+              src,
+              thumbnail: video.poster || "", // use <video poster>
             });
           }
         });
+
         document.querySelectorAll("iframe").forEach((iframe) => {
-          if (/youtube|vimeo/.test(iframe.src)) {
-            videos.push(iframe.src);
+          const src = iframe.src;
+          let thumbnail = "";
+
+          // YouTube
+          const ytMatch = src.match(
+            /(?:youtube\.com\/embed\/|youtu\.be\/)([a-zA-Z0-9_-]+)/
+          );
+          if (ytMatch) {
+            const videoId = ytMatch[1];
+            thumbnail = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          }
+
+          // Vimeo (can't get without API, so show no preview)
+          const isVimeo = /vimeo\.com/.test(src);
+          if (ytMatch || isVimeo) {
+            videos.push({ type: "iframe", src, thumbnail });
           }
         });
+
         return videos;
       },
     },
     (injectionResults) => {
       const results = injectionResults[0].result;
       const container = document.getElementById("video-list");
+
       if (!results.length) {
         container.innerHTML = "<p>No videos found.</p>";
         return;
       }
 
       container.innerHTML = results
-        .map(
-          (src, index) => `
-          <div class="video-item">
-            <a href="${src}" target="_blank">${src}</a>
-            <button class="copy-btn" data-url="${src}" id="copy-${index}"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M6 11C6 8.17157 6 6.75736 6.87868 5.87868C7.75736 5 9.17157 5 12 5H15C17.8284 5 19.2426 5 20.1213 5.87868C21 6.75736 21 8.17157 21 11V16C21 18.8284 21 20.2426 20.1213 21.1213C19.2426 22 17.8284 22 15 22H12C9.17157 22 7.75736 22 6.87868 21.1213C6 20.2426 6 18.8284 6 16V11Z" stroke="#1C274C" stroke-width="1.5"></path> <path d="M6 19C4.34315 19 3 17.6569 3 16V10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H15C16.6569 2 18 3.34315 18 5" stroke="#1C274C" stroke-width="1.5"></path> </g></svg></button>
-            <span class="copied-msg" id="copied-${index}">Copied!</span>
-          </div>`
-        )
+        .map((video, index) => {
+          const thumb = video.thumbnail
+            ? `<img src="${video.thumbnail}" class="thumb" alt="Thumbnail">`
+            : `<div class="thumb placeholder">No preview</div>`;
+
+          return `
+              <div class="video-item">
+                ${thumb}
+                <a href="${video.src}" target="_blank">${video.src}</a>
+                <div class="action-row">
+                    <button class="copy-btn" data-url="${
+                      video.src
+                    }" id="copy-${index}">📋</button>
+                    ${
+                      video.type === "video"
+                        ? `<a href="${video.src}" download class="download-btn">⬇️</a>`
+                        : ""
+                    }
+                    <span class="copied-msg" id="copied-${index}">Copied!</span>
+                </div>
+              </div>
+            `;
+        })
         .join("");
 
       document.querySelectorAll(".copy-btn").forEach((btn) => {
