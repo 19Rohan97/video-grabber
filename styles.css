@@ -1,0 +1,39 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 10px;
+  width: 400px;
+}
+a {
+  color: black;
+  word-break: break-all;
+}
+
+.video-item {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  background: #efefef;
+  padding: 20px;
+  border-radius: 5px;
+}
+
+.copy-btn {
+  background-color: transparent;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  box-shadow: unset;
+}
+
+.copy-btn svg {
+  width: 20px;
+}
+
+.copied-msg {
+  display: none;
+  font-size: 11px;
+  color: green;
+  margin-top: 2px;
+}
